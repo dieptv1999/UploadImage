@@ -2,14 +2,17 @@ package com.example.uploadimage;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.Image;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.FileUtils;
 import android.util.Base64;
 import android.util.Log;
@@ -39,6 +42,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
+    private int REQUEST_CODE = 1;
     List<Infomation> infos=new ArrayList<>();
     ListView listView;
     Button btn_add;
@@ -56,13 +60,21 @@ public class MainActivity extends AppCompatActivity {
                 showFileChooser();
             }
         });
+        if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(
+                    new String[] {Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                    REQUEST_CODE);
+        }
         send.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 List<String> imgs=new ArrayList<>();
                 for (Infomation s:infos){
                     String filepath = s.getName();
-                    File imagefile = new File("/storage/sdcard0/Pictures/Screenshots/Screenshot_20180528-195239.png");
+                    String sdPath = Environment.getExternalStorageDirectory().getAbsolutePath() ;
+                    Log.v("TAG",sdPath);
+                    File imagefile = new File(filepath);
                     FileInputStream fis = null;
                     try {
                         fis = new FileInputStream(imagefile);
@@ -75,6 +87,14 @@ public class MainActivity extends AppCompatActivity {
                     bm.compress(Bitmap.CompressFormat.JPEG, 100 , baos);
                     byte[] b = baos.toByteArray();
                     imgs.add(Base64.encodeToString(b, Base64.DEFAULT));
+                }
+                try {
+                    if (sendData(imgs)) {
+                        Log.v("TAG","Upload success");
+                    }
+                    else  Log.v("TAG","Upload fail");
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
         });
